@@ -25,12 +25,21 @@ async function fetchDefiLlamaProtocol(protocolId) {
     if (!res.ok) return null;
     const protocolData = await res.json();
     
-    // Return with additional fields for links
+    // Return with additional fields for links and new metrics
     return {
       ...protocolData,
       url: protocolData.url || null,
       twitter: protocolData.twitter || null,
-      github: protocolData.github || null
+      github: protocolData.github || null,
+      // TVL trends
+      change_1d: protocolData.change_1d || null,
+      change_7d: protocolData.change_7d || null,
+      change_1m: protocolData.change_1m || null,
+      // Token metrics
+      mcap: protocolData.mcap || null,
+      tokenPrice: protocolData.tokenPrice || null,
+      tokenSymbol: protocolData.tokenSymbol || protocolData.symbol || null,
+      fdv: protocolData.fdv || null
     };
   } catch (err) {
     console.error(`[DeFiLlama] Error fetching ${protocolId}:`, err.message);
@@ -121,7 +130,15 @@ async function updateDapp(dappId, updates) {
       return;
     }
 
-    await client.items.update(dappId, payload);
+    console.log(`[debug] Updating dapp ${dappId} with fields: ${Object.keys(payload).join(', ')}`);
+    try {
+      await client.items.update(dappId, payload);
+      console.log(`[debug] Successfully updated dapp ${dappId}`);
+    } catch (updateErr) {
+      console.error(`[error] Failed to update dapp ${dappId}:`, updateErr.message);
+      console.error(`[error] Payload keys:`, Object.keys(payload));
+      throw updateErr;
+    }
     
     // Publish the updated item
     try {
@@ -279,36 +296,108 @@ async function syncDapp(dapp) {
   const freshAlchemyData = await fetchAlchemyDapp(title);
   
   if (freshAlchemyData || defiLlamaData || alchemyDetail) {
-    const updatedAlchemyData = alchemyData || freshAlchemyData || {};
+    // Start with existing data or create new structure
+    const updatedAlchemyData = alchemyData || {};
     
-    // Merge fresh Alchemy data
-    if (freshAlchemyData) {
-      Object.assign(updatedAlchemyData, freshAlchemyData);
+    // Properly structure Alchemy data (same format as seed script)
+    if (freshAlchemyData || alchemyDetail) {
+      // Core identification
+      if (freshAlchemyData?.name) updatedAlchemyData.name = freshAlchemyData.name;
+      if (freshAlchemyData?.slug) updatedAlchemyData.slug = freshAlchemyData.slug;
+      if (alchemyDetail?.recordId) updatedAlchemyData.recordId = alchemyDetail.recordId;
+      
+      // Descriptions (prioritize detail endpoint)
+      updatedAlchemyData.description = alchemyDetail?.description || 
+                                       freshAlchemyData?.description || 
+                                       updatedAlchemyData.description || 
+                                       null;
+      updatedAlchemyData.shortDescription = freshAlchemyData?.description || 
+                                            updatedAlchemyData.shortDescription || 
+                                            null;
+      updatedAlchemyData.longDescription = alchemyDetail?.longDescription || 
+                                          freshAlchemyData?.longDescription || 
+                                          alchemyDetail?.description || 
+                                          updatedAlchemyData.longDescription || 
+                                          null;
+      
+      // Media
+      updatedAlchemyData.logoUrl = alchemyDetail?.logoCdnUrl || 
+                                   freshAlchemyData?.logoUrl || 
+                                   updatedAlchemyData.logoUrl || 
+                                   null;
+      updatedAlchemyData.logoCdnUrl = alchemyDetail?.logoCdnUrl || 
+                                      freshAlchemyData?.logoCdnUrl || 
+                                      updatedAlchemyData.logoCdnUrl || 
+                                      null;
+      
+      // Chains and categories (from both list and detail)
+      updatedAlchemyData.chains = alchemyDetail?.chains || 
+                                  freshAlchemyData?.chains || 
+                                  updatedAlchemyData.chains || 
+                                  [];
+      updatedAlchemyData.categories = alchemyDetail?.vipChildCategory || 
+                                      alchemyDetail?.categories ||
+                                      freshAlchemyData?.categories || 
+                                      updatedAlchemyData.categories || 
+                                      [];
+      updatedAlchemyData.vipChildCategory = alchemyDetail?.vipChildCategory || 
+                                           freshAlchemyData?.categories || 
+                                           updatedAlchemyData.vipChildCategory || 
+                                           [];
+      
+      // Metadata
+      updatedAlchemyData.eyebrowText = alchemyDetail?.eyebrowText || 
+                                      freshAlchemyData?.eyebrowText || 
+                                      updatedAlchemyData.eyebrowText || 
+                                      null;
+      
+      // Links and social (prioritize detail endpoint)
+      updatedAlchemyData.websiteUrl = alchemyDetail?.website || 
+                                      alchemyDetail?.websiteUrl || 
+                                      freshAlchemyData?.websiteUrl || 
+                                      updatedAlchemyData.websiteUrl || 
+                                      null;
+      updatedAlchemyData.website = alchemyDetail?.website || 
+                                   freshAlchemyData?.website || 
+                                   updatedAlchemyData.website || 
+                                   null;
+      updatedAlchemyData.twitterUrl = alchemyDetail?.twitter || 
+                                      alchemyDetail?.twitterUrl || 
+                                      freshAlchemyData?.twitterUrl || 
+                                      updatedAlchemyData.twitterUrl || 
+                                      null;
+      updatedAlchemyData.twitter = alchemyDetail?.twitter || 
+                                   freshAlchemyData?.twitter || 
+                                   updatedAlchemyData.twitter || 
+                                   null;
+      updatedAlchemyData.discordUrl = alchemyDetail?.discordUrl || 
+                                     freshAlchemyData?.discordUrl || 
+                                     updatedAlchemyData.discordUrl || 
+                                     null;
+      updatedAlchemyData.githubUrl = alchemyDetail?.githubUrl || 
+                                    freshAlchemyData?.githubUrl || 
+                                    updatedAlchemyData.githubUrl || 
+                                    null;
+      updatedAlchemyData.documentationUrl = alchemyDetail?.documentationUrl || 
+                                           freshAlchemyData?.documentationUrl || 
+                                           updatedAlchemyData.documentationUrl || 
+                                           null;
+      
+      // Additional fields from detail endpoint
+      if (alchemyDetail?.featured !== undefined) updatedAlchemyData.featured = alchemyDetail.featured;
+      if (alchemyDetail?.verified !== undefined) updatedAlchemyData.verified = alchemyDetail.verified;
+      if (alchemyDetail?.createdAt) updatedAlchemyData.createdAt = alchemyDetail.createdAt;
+      if (alchemyDetail?.updatedAt) updatedAlchemyData.updatedAt = alchemyDetail.updatedAt;
     }
     
-    // Update with detail endpoint data if available
-    if (alchemyDetail) {
-      if (alchemyDetail.longDescription) {
-        updatedAlchemyData.longDescription = alchemyDetail.longDescription;
-      }
-      if (alchemyDetail.website) {
-        updatedAlchemyData.websiteUrl = alchemyDetail.website;
-      }
-      if (alchemyDetail.twitter) {
-        updatedAlchemyData.twitterUrl = alchemyDetail.twitter;
-      }
-      // Use detail endpoint categories (full objects with names) if available
-      if (alchemyDetail.vipChildCategory && Array.isArray(alchemyDetail.vipChildCategory)) {
-        updatedAlchemyData.categories = alchemyDetail.vipChildCategory;
-      }
-    }
-    
-    // Add DeFiLlama links and description if available
+    // Add DeFiLlama links and description if available (prioritize DeFiLlama)
     if (defiLlamaData) {
       updatedAlchemyData.websiteUrl = defiLlamaData.url || updatedAlchemyData.websiteUrl;
+      updatedAlchemyData.website = defiLlamaData.url || updatedAlchemyData.website;
       updatedAlchemyData.twitterUrl = defiLlamaData.twitter 
         ? `https://twitter.com/${defiLlamaData.twitter.replace('@', '')}` 
         : updatedAlchemyData.twitterUrl;
+      updatedAlchemyData.twitter = defiLlamaData.twitter || updatedAlchemyData.twitter;
       updatedAlchemyData.githubUrl = defiLlamaData.github || updatedAlchemyData.githubUrl;
       
       // Update full description if DeFiLlama has a better one

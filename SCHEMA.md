@@ -38,18 +38,35 @@ The Dapp model (`api_key: "dapp"`) contains the following fields:
 ### Alchemy Fields
 
 - **`alchemy_recent_activity`** (Text, optional)
-  - JSON string containing Alchemy dapp store data
+  - JSON string containing **properly structured** Alchemy dapp store data
   - Format:
     ```json
     {
       "name": "DApp Name",
       "slug": "dapp-slug",
+      "recordId": "...",
       "description": "Description",
+      "shortDescription": "Short description",
+      "longDescription": "Full detailed description",
       "logoUrl": "https://...",
+      "logoCdnUrl": "https://...",
       "chains": [...],
       "categories": [...],
+      "vipChildCategory": [...],
       "eyebrowText": "...",
-      "source": "alchemy_dapp_store"
+      "websiteUrl": "https://...",
+      "website": "https://...",
+      "twitterUrl": "https://...",
+      "twitter": "@handle",
+      "discordUrl": "https://...",
+      "githubUrl": "https://...",
+      "documentationUrl": "https://...",
+      "featured": false,
+      "verified": false,
+      "createdAt": "...",
+      "updatedAt": "...",
+      "source": "alchemy_dapp_store",
+      "rawListData": { ... }
     }
     ```
 

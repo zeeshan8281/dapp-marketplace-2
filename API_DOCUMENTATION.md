@@ -4,6 +4,26 @@ This document describes the scripts and APIs used in this project.
 
 ## Scripts
 
+### `seed-goldrush-chains.mjs`
+
+Seeds chains from GoldRush-supported blockchain networks with priority levels.
+
+**Usage:**
+```bash
+DATOCMS_API_TOKEN=xxxxx node seed-goldrush-chains.mjs
+```
+
+**What it does:**
+1. Seeds all 48 GoldRush-supported chains into DatoCMS Chain model
+2. Marks chains with priority levels:
+   - **Priority 1 (Foundational)**: Ethereum, Polygon, BSC, Optimism, Base, Gnosis
+   - **Priority 2 (Frontier)**: Bitcoin, Avalanche, Arbitrum, etc.
+   - **Priority 3 (Community)**: Blast, Fantom, Linea, etc.
+   - **Priority 4 (Archived)**: Harmony, Lisk, Loot Chain
+3. These chains are prioritized when seeding dapps
+
+**Reference:** [GoldRush Supported Chains](https://goldrush.dev/docs/chains/overview)
+
 ### `seed-alchemy-dapps.mjs`
 
 Seeds dapps from Alchemy's public dapp store API.
@@ -14,10 +34,20 @@ DATOCMS_API_TOKEN=xxxxx node seed-alchemy-dapps.mjs
 ```
 
 **What it does:**
-1. Fetches up to 150 dapps from Alchemy's public dapp store API
-2. For each dapp, attempts to find matching DeFiLlama protocol data
-3. Creates dapp records in DatoCMS with combined data from both sources
-4. Stores Alchemy-specific data in the `alchemy_recent_activity` field
+1. Fetches **ALL available dapps** from Alchemy's public dapp store API (no limit)
+2. **Prioritizes dapps on GoldRush-supported chains** (Foundational > Frontier > Community > Archived)
+3. For each dapp, fetches detailed data from the detail endpoint for complete information
+4. Attempts to find matching DeFiLlama protocol data
+5. Creates dapp records in DatoCMS with combined data from both sources
+6. Stores **properly structured** Alchemy-specific data in the `alchemy_recent_activity` field
+7. Shows priority breakdown and statistics
+
+**Priority Order:**
+- 🌟 Foundational chains (Ethereum, Polygon, BSC, Optimism, Base, Gnosis)
+- ⚡ Frontier chains (Bitcoin, Avalanche, Arbitrum, etc.)
+- 👥 Community chains (Blast, Fantom, Linea, etc.)
+- 📦 Archived chains (Harmony, Lisk, Loot Chain)
+- ⚠️ Other chains (non-GoldRush)
 
 **Data Sources:**
 - **Alchemy Dapp Store API**: `https://dapp-store.alchemy.com/dapps`
@@ -53,19 +83,20 @@ DATOCMS_API_TOKEN=xxxxx node check-and-publish-dapps.mjs
 2. Publishes them in batches
 3. Reports success/failure counts
 
-### `seed-popular-dapps.mjs`
+### `generate-unified-metadata.mjs`
 
-Seeds top DeFiLlama protocols as dapps.
+Generates unified metadata for all dapps, combining data from Alchemy and DeFiLlama.
 
 **Usage:**
 ```bash
-DATOCMS_API_TOKEN=xxxxx node seed-popular-dapps.mjs
+DATOCMS_API_TOKEN=xxxxx node generate-unified-metadata.mjs
 ```
 
 **What it does:**
-1. Fetches top 50 protocols from DeFiLlama (sorted by TVL)
-2. Creates dapp records in DatoCMS
-3. Includes TVL, category, and chain TVL data
+1. Fetches all dapps from DatoCMS
+2. Generates unified_metadata from Alchemy and DeFiLlama data
+3. Updates each dapp with the unified metadata
+4. Ensures all fields have proper fallbacks (no empty values)
 
 ## External APIs
 
@@ -122,10 +153,34 @@ DATOCMS_API_TOKEN=xxxxx node seed-popular-dapps.mjs
 - `DATOCMS_API_TOKEN` - Full-access CMA token for creating/updating items
 - `DATOCMS_READONLY_TOKEN` - Read-only token for GraphQL queries (used in frontend)
 
+## Recommended Workflow
+
+1. **Seed GoldRush chains first** (highest priority):
+   ```bash
+   DATOCMS_API_TOKEN=xxxxx node seed-goldrush-chains.mjs
+   ```
+
+2. **Seed dapps** (will prioritize GoldRush chains):
+   ```bash
+   DATOCMS_API_TOKEN=xxxxx node seed-alchemy-dapps.mjs [LIMIT]
+   ```
+
+3. **Publish all items**:
+   ```bash
+   DATOCMS_API_TOKEN=xxxxx node check-and-publish-dapps.mjs
+   ```
+
+4. **Sync DeFiLlama data**:
+   ```bash
+   DATOCMS_API_TOKEN=xxxxx node sync-dapps.mjs
+   ```
+
 ## Notes
 
 - All scripts include rate limiting to avoid hitting API limits
 - TVL values are validated to ensure they're numbers (not arrays) before saving
 - Items are created but not automatically published - use `check-and-publish-dapps.mjs` to publish them
 - The `alchemy_recent_activity` field stores JSON data from Alchemy's API
+- **GoldRush chains are prioritized** - dapps on Foundational chains are processed first
+- Use `MAX_CREATE` limit to stay within DatoCMS plan quotas
 

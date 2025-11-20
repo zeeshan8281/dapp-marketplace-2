@@ -11,6 +11,7 @@ const QUERY = `
     allDapps(first: $first, skip: $skip, orderBy: _createdAt_DESC) {
       id
       title
+      # slug  # Uncomment once GraphQL schema refreshes (usually 2-3 minutes)
       shortDescription
       screenshots {
         url(imgixParams: { w: 200, h: 200, fit: crop })
@@ -22,34 +23,18 @@ const QUERY = `
       protocolId
       categoryDefillama
       alchemyRecentActivity
-      chains {
-        id
-        name
-      }
-      categories {
-        id
-        name
-      }
-      tags {
-        id
-        tag
-      }
+      # unifiedMetadata  # Uncomment once GraphQL schema refreshes (usually 2-3 minutes)
+      # Note: chains, categories, and tags are stored in alchemyRecentActivity JSON, not as relationships
     }
     _allDappsMeta {
       count
     }
-    allCategories(orderBy: _createdAt_ASC) {
-      id
-      name
-    }
-    allChains(orderBy: _createdAt_ASC) {
-      id
-      name
-    }
-    allTags(orderBy: _createdAt_ASC) {
-      id
-      tag
-    }
+    # Note: Categories are extracted from alchemyRecentActivity, not from separate models
+    # Chains can be queried from the Chain model (if available)
+    # allChains(first: 100, orderBy: name_ASC) {
+    #   id
+    #   name
+    # }
   }
 `;
 
@@ -94,7 +79,7 @@ function getThemeColors(theme) {
   }
 }
 
-export default function DappsPage({ dapps, totalCount, categories, chains, tags, error }) {
+export default function DappsPage({ dapps = [], totalCount = 0, categories = [], chains = [], tags = [], error }) {
   const router = useRouter();
   const { theme, mounted: themeMounted } = useTheme();
   const [searchQuery, setSearchQuery] = useState('');
@@ -130,9 +115,30 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
     router.push(`/dapps?page=${newPage}`, undefined, { shallow: true });
   };
 
-  const colors = getThemeColors(theme);
+  // Ensure theme is available (fallback to 'dark' if not mounted yet)
+  const safeTheme = theme || 'dark';
+  const colors = getThemeColors(safeTheme);
 
-  // Extract combined categories from both DeFiLlama and Alchemy (human-readable names only)
+  // Safety check: ensure dapps is always an array
+  const safeDapps = Array.isArray(dapps) ? dapps : [];
+  
+  // Early return with error display if critical error (but still render something)
+  if (error && safeDapps.length === 0 && totalCount === 0) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        padding: 40, 
+        textAlign: 'center', 
+        color: colors.text,
+        background: colors.bg 
+      }}>
+        <h1 style={{ color: colors.text }}>Error Loading Dapps</h1>
+        <p style={{ color: colors.textSecondary }}>{error}</p>
+      </div>
+    );
+  }
+
+  // Extract combined categories from both DeFiLlama and Alchemy (human-readable names only, eliminate duplicates)
   const combinedCategories = useMemo(() => {
     const cats = new Set();
     
@@ -142,7 +148,7 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
       return /^rec[a-zA-Z0-9]+$/.test(str);
     };
     
-    dapps.forEach(dapp => {
+    safeDapps.forEach(dapp => {
       // Add DeFiLlama category (already human-readable)
       if (dapp.categoryDefillama && !isId(dapp.categoryDefillama)) {
         cats.add(dapp.categoryDefillama);
@@ -159,7 +165,7 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
             alchemyData.categories.forEach(cat => {
               // Extract human-readable name from category object
               if (typeof cat === 'string') {
-                // Only add if it's not an ID
+                // Only add if it's not an ID (Set automatically eliminates duplicates)
                 if (!isId(cat)) {
                   cats.add(cat);
                 }
@@ -178,13 +184,14 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
       }
     });
     
+    // Set automatically eliminates duplicates, return sorted array
     return Array.from(cats).sort();
-  }, [dapps]);
+  }, [safeDapps]);
 
   const filteredDapps = useMemo(() => {
-    if (!dapps || dapps.length === 0) return [];
+    if (!safeDapps || safeDapps.length === 0) return [];
     
-    return dapps.filter(dapp => {
+    return safeDapps.filter(dapp => {
       // Search filter
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
@@ -238,7 +245,7 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
 
       return true;
     });
-  }, [dapps, selectedCombinedCategory, searchQuery]);
+  }, [safeDapps, selectedCombinedCategory, searchQuery]);
 
   // Paginate filtered results
   const totalPages = Math.ceil(filteredDapps.length / itemsPerPage);
@@ -250,10 +257,55 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
     <>
       <Head>
         <title>DApps Terminal | Browse Protocols</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
         <style>{`
+          @font-face {
+            font-family: 'Aspekta';
+            src: url('https://cdn.jsdelivr.net/gh/uncut-wtf/aspekta@main/fonts/Aspekta-Regular.woff2') format('woff2'),
+                 url('https://cdn.jsdelivr.net/gh/uncut-wtf/aspekta@main/fonts/Aspekta-Regular.woff') format('woff');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+          }
+          @font-face {
+            font-family: 'Aspekta';
+            src: url('https://cdn.jsdelivr.net/gh/uncut-wtf/aspekta@main/fonts/Aspekta-Medium.woff2') format('woff2'),
+                 url('https://cdn.jsdelivr.net/gh/uncut-wtf/aspekta@main/fonts/Aspekta-Medium.woff') format('woff');
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+          }
+          @font-face {
+            font-family: 'Aspekta';
+            src: url('https://cdn.jsdelivr.net/gh/uncut-wtf/aspekta@main/fonts/Aspekta-SemiBold.woff2') format('woff2'),
+                 url('https://cdn.jsdelivr.net/gh/uncut-wtf/aspekta@main/fonts/Aspekta-SemiBold.woff') format('woff');
+            font-weight: 600;
+            font-style: normal;
+            font-display: swap;
+          }
+          @font-face {
+            font-family: 'Aspekta';
+            src: url('https://cdn.jsdelivr.net/gh/uncut-wtf/aspekta@main/fonts/Aspekta-Bold.woff2') format('woff2'),
+                 url('https://cdn.jsdelivr.net/gh/uncut-wtf/aspekta@main/fonts/Aspekta-Bold.woff') format('woff');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+          }
+          @font-face {
+            font-family: 'Aspekta';
+            src: url('https://cdn.jsdelivr.net/gh/uncut-wtf/aspekta@main/fonts/Aspekta-ExtraBold.woff2') format('woff2'),
+                 url('https://cdn.jsdelivr.net/gh/uncut-wtf/aspekta@main/fonts/Aspekta-ExtraBold.woff') format('woff');
+            font-weight: 800;
+            font-style: normal;
+            font-display: swap;
+          }
+          @font-face {
+            font-family: 'Aspekta';
+            src: url('https://cdn.jsdelivr.net/gh/uncut-wtf/aspekta@main/fonts/Aspekta-Black.woff2') format('woff2'),
+                 url('https://cdn.jsdelivr.net/gh/uncut-wtf/aspekta@main/fonts/Aspekta-Black.woff') format('woff');
+            font-weight: 900;
+            font-style: normal;
+            font-display: swap;
+          }
           @keyframes gradientShift {
             0%, 100% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
@@ -283,7 +335,7 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
         `,
         backgroundSize: '50px 50px',
         color: colors.text,
-        fontFamily: '"DM Sans", -apple-system, sans-serif',
+        fontFamily: '"Aspekta", -apple-system, sans-serif',
         padding: '32px 20px 60px',
         transition: 'background 0.3s ease, color 0.3s ease'
       }}>
@@ -320,7 +372,7 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
               style={{
                 fontSize: 48,
                 fontWeight: 900,
-                fontFamily: '"Orbitron", monospace',
+                fontFamily: '"Aspekta", sans-serif',
                 background: colors.titleGradient,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -340,7 +392,7 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
               color: colors.textTertiary,
               fontSize: 16,
               margin: 0,
-              fontFamily: '"JetBrains Mono", monospace'
+              fontFamily: '"Aspekta", sans-serif'
             }}>
               {totalCount || 0} PROTOCOLS
             </p>
@@ -373,7 +425,7 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
                 borderRadius: 8,
                 color: colors.text,
                 fontSize: 14,
-                fontFamily: '"JetBrains Mono", monospace',
+                fontFamily: '"Aspekta", sans-serif',
                 outline: 'none',
                 transition: 'all 0.3s'
               }}
@@ -398,7 +450,7 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
                 borderRadius: 8,
                 color: colors.text,
                 fontSize: 14,
-                fontFamily: '"JetBrains Mono", monospace',
+                fontFamily: '"Aspekta", sans-serif',
                 cursor: 'pointer',
                 outline: 'none',
                 transition: 'all 0.3s'
@@ -423,7 +475,7 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
             <div style={{
               color: colors.textTertiary,
               fontSize: 14,
-              fontFamily: '"JetBrains Mono", monospace'
+              fontFamily: '"Aspekta", sans-serif'
             }}>
               {filteredDapps.length} {filteredDapps.length === 1 ? 'PROTOCOL' : 'PROTOCOLS'} FOUND
               {totalPages > 1 && ` • PAGE ${currentPage} OF ${totalPages}`}
@@ -448,7 +500,7 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
                     borderRadius: 8,
                     color: currentPage === 1 ? colors.textTertiary : colors.text,
                     fontSize: 14,
-                    fontFamily: '"JetBrains Mono", monospace',
+                    fontFamily: '"Aspekta", sans-serif',
                     cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                     outline: 'none',
                     transition: 'all 0.3s',
@@ -506,7 +558,7 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
                             : colors.text,
                           fontSize: 14,
                           fontWeight: currentPage === pageNum ? 700 : 400,
-                          fontFamily: '"JetBrains Mono", monospace',
+                          fontFamily: '"Aspekta", sans-serif',
                           cursor: 'pointer',
                           outline: 'none',
                           transition: 'all 0.3s',
@@ -545,7 +597,7 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
                     borderRadius: 8,
                     color: currentPage === totalPages ? colors.textTertiary : colors.text,
                     fontSize: 14,
-                    fontFamily: '"JetBrains Mono", monospace',
+                    fontFamily: '"Aspekta", sans-serif',
                     cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
                     outline: 'none',
                     transition: 'all 0.3s',
@@ -617,12 +669,53 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
               
               const mappedDapp = {
                 ...dapp,
-                slug: dapp.id,
                 short_description: dapp.shortDescription,
                 logo: logoUrl ? { url: logoUrl } : null,
-                chains: dapp.chains || [],
-                categories: dapp.categories || [],
-                tags: dapp.tags || [],
+                chains: (() => {
+                  // Extract chains from alchemyRecentActivity
+                  // Filter out Alchemy record IDs (strings starting with "rec") and only keep actual chain names
+                  try {
+                    const alchemyData = dapp.alchemyRecentActivity 
+                      ? (typeof dapp.alchemyRecentActivity === 'string' 
+                          ? JSON.parse(dapp.alchemyRecentActivity) 
+                          : dapp.alchemyRecentActivity)
+                      : null;
+                    if (alchemyData?.chains && Array.isArray(alchemyData.chains)) {
+                      return alchemyData.chains
+                        .map(chain => {
+                          const chainName = typeof chain === 'string' ? chain : (chain?.name || chain);
+                          // Skip Alchemy record IDs (they start with "rec" and are long)
+                          if (typeof chainName === 'string' && chainName.startsWith('rec') && chainName.length > 10) {
+                            return null;
+                          }
+                          return {
+                            id: `chain-${chainName}`,
+                            name: chainName
+                          };
+                        })
+                        .filter(Boolean);
+                    }
+                  } catch (e) {}
+                  return [];
+                })(),
+                categories: (() => {
+                  // Extract categories from alchemyRecentActivity
+                  try {
+                    const alchemyData = dapp.alchemyRecentActivity 
+                      ? (typeof dapp.alchemyRecentActivity === 'string' 
+                          ? JSON.parse(dapp.alchemyRecentActivity) 
+                          : dapp.alchemyRecentActivity)
+                      : null;
+                    if (alchemyData?.categories && Array.isArray(alchemyData.categories)) {
+                      return alchemyData.categories.map(cat => ({
+                        id: `cat-${cat}`,
+                        name: typeof cat === 'string' ? cat : cat.name || cat
+                      }));
+                    }
+                  } catch (e) {}
+                  return [];
+                })(),
+                tags: [], // Tags not available in current schema
                 tvl_usd: dapp.tvlUsd || null,
                 token_price_usd: dapp.tokenPriceUsd || null,
                 token_price_change_24h: null,
@@ -667,7 +760,7 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
                   borderRadius: 8,
                   color: currentPage === 1 ? colors.textTertiary : colors.text,
                   fontSize: 14,
-                  fontFamily: '"JetBrains Mono", monospace',
+                  fontFamily: '"Aspekta", sans-serif',
                   cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
                   outline: 'none',
                   transition: 'all 0.3s',
@@ -725,7 +818,7 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
                           : colors.text,
                         fontSize: 14,
                         fontWeight: currentPage === pageNum ? 700 : 400,
-                        fontFamily: '"JetBrains Mono", monospace',
+                        fontFamily: '"Aspekta", sans-serif',
                         cursor: 'pointer',
                         outline: 'none',
                         transition: 'all 0.3s',
@@ -764,7 +857,7 @@ export default function DappsPage({ dapps, totalCount, categories, chains, tags,
                   borderRadius: 8,
                   color: currentPage === totalPages ? colors.textTertiary : colors.text,
                   fontSize: 14,
-                  fontFamily: '"JetBrains Mono", monospace',
+                  fontFamily: '"Aspekta", sans-serif',
                   cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
                   outline: 'none',
                   transition: 'all 0.3s',
@@ -856,9 +949,9 @@ export async function getServerSideProps() {
       props: {
         dapps: finalDapps,
         totalCount: firstPage._allDappsMeta?.count || finalDapps.length,
-        categories: firstPage.allCategories || [],
-        chains: firstPage.allChains || [],
-        tags: firstPage.allTags || []
+        categories: [], // Categories extracted from alchemyRecentActivity
+        chains: [], // Chains will be available once GraphQL schema refreshes
+        tags: [] // Tags not available in current schema
       }
     };
   } catch (err) {
@@ -870,9 +963,9 @@ export async function getServerSideProps() {
       props: {
         dapps: [],
         totalCount: 0,
-        categories: [],
-        chains: [],
-        tags: [],
+        categories: [], // Categories extracted from alchemyRecentActivity
+        chains: [], // Chains extracted from alchemyRecentActivity
+        tags: [], // Tags not available in current schema
         error: errorMessage
       }
     };

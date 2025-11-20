@@ -46,45 +46,161 @@ function getLogoUrl(dapp) {
 }
 
 export default function DappCard({ dapp, theme = 'dark' }) {
+  // Parse unified metadata
+  let unified = null;
+  if (dapp.unified_metadata) {
+    try {
+      unified = typeof dapp.unified_metadata === 'string' 
+        ? JSON.parse(dapp.unified_metadata) 
+        : dapp.unified_metadata;
+    } catch (e) {
+      // Ignore parse errors
+    }
+  }
+
+  // Get data from unified metadata with fallbacks
   const price = dapp.token_price_usd;
   const change = dapp.token_price_change_24h;
-  const tvl = dapp.tvl_usd;
+  const tvl = unified?.tvlUsd || dapp.tvl_usd;
   
+  // Get category from unified or fallback
+  const category = unified?.category || dapp.categoryDefillama;
+  
+  // Get description from unified or fallback
+  const description = unified?.description || dapp.short_description || dapp.description || 'No description available';
+  
+  // Validate and normalize URL
+  const normalizeUrl = (url) => {
+    if (!url || typeof url !== 'string') return null;
+    // Remove whitespace
+    url = url.trim();
+    if (!url) return null;
+    // If already absolute URL, return as is
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    // If relative URL, try to make it absolute (assuming it's from DatoCMS)
+    if (url.startsWith('/')) {
+      return url;
+    }
+    // If it's a data URL, return as is
+    if (url.startsWith('data:')) {
+      return url;
+    }
+    // Otherwise, assume it's invalid
+    return null;
+  };
+
   // Get all possible logo URLs in priority order for fallback chain
   const getLogoUrls = () => {
     const urls = [];
+    
+    // 1. Screenshots (DatoCMS - most reliable)
     if (dapp.screenshots && dapp.screenshots.length > 0 && dapp.screenshots[0].url) {
-      urls.push(dapp.screenshots[0].url);
+      const url = normalizeUrl(dapp.screenshots[0].url);
+      if (url) urls.push(url);
     }
-    if (dapp.token_logo_url) urls.push(dapp.token_logo_url);
-    if (dapp.logo?.url) urls.push(dapp.logo.url);
+    
+    // 2. Unified metadata logo
+    if (unified?.logoUrl) {
+      const url = normalizeUrl(unified.logoUrl);
+      if (url) urls.push(url);
+    }
+    
+    // 3. Token logo URL
+    if (dapp.token_logo_url) {
+      const url = normalizeUrl(dapp.token_logo_url);
+      if (url) urls.push(url);
+    }
+    
+    // 4. DatoCMS logo field
+    if (dapp.logo?.url) {
+      const url = normalizeUrl(dapp.logo.url);
+      if (url) urls.push(url);
+    }
+    
+    // 5. Alchemy logo
     if (dapp.alchemy_recent_activity) {
       try {
         const alchemyData = typeof dapp.alchemy_recent_activity === 'string' 
           ? JSON.parse(dapp.alchemy_recent_activity) 
           : dapp.alchemy_recent_activity;
         if (alchemyData?.logoUrl) {
-          urls.push(alchemyData.logoUrl);
+          const url = normalizeUrl(alchemyData.logoUrl);
+          if (url) urls.push(url);
+        }
+        // Also check logoCdnUrl
+        if (alchemyData?.logoCdnUrl) {
+          const url = normalizeUrl(alchemyData.logoCdnUrl);
+          if (url) urls.push(url);
         }
       } catch (e) {
         // Ignore parse errors
       }
     }
+    
+    // 6. DeFiLlama icon (last resort)
     if (dapp.protocolId) {
       urls.push(`https://icons.llama.fi/${dapp.protocolId}.png`);
     }
-    return urls;
+    
+    // Remove duplicates
+    return [...new Set(urls)];
   };
   
   const logoUrls = useMemo(() => getLogoUrls(), [dapp]);
   const [logoUrl, setLogoUrl] = useState(logoUrls[0] || null);
   const [logoError, setLogoError] = useState(false);
+  const [logoLoading, setLogoLoading] = useState(true);
   
   // Reset logo state when dapp changes
   useEffect(() => {
     setLogoUrl(logoUrls[0] || null);
     setLogoError(false);
+    setLogoLoading(true);
   }, [logoUrls]);
+  
+  // Preload image to check if it's valid
+  useEffect(() => {
+    if (!logoUrl) {
+      setLogoLoading(false);
+      return;
+    }
+    
+    const img = new Image();
+    let cancelled = false;
+    
+    img.onload = () => {
+      if (!cancelled) {
+        setLogoLoading(false);
+        setLogoError(false);
+      }
+    };
+    
+    img.onerror = () => {
+      if (!cancelled) {
+        // Try next URL in fallback chain
+        const currentIndex = logoUrls.indexOf(logoUrl);
+        if (currentIndex < logoUrls.length - 1) {
+          setLogoUrl(logoUrls[currentIndex + 1]);
+        } else {
+          // All logos failed
+          setLogoError(true);
+          setLogoLoading(false);
+        }
+      }
+    };
+    
+    // Set crossOrigin to anonymous to avoid CORS issues (if possible)
+    img.crossOrigin = 'anonymous';
+    img.src = logoUrl;
+    
+    return () => {
+      cancelled = true;
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [logoUrl, logoUrls]);
 
   // Calculate freshness indicator
   const getFreshnessColor = (lastSynced) => {
@@ -116,7 +232,7 @@ export default function DappCard({ dapp, theme = 'dark' }) {
 
   return (
     <Link 
-      href={`/dapps/${dapp.slug || dapp.id}`}
+      href={`/dapps/${dapp.id}`}
       style={{ 
         display: "block", 
         textDecoration: "none", 
@@ -184,7 +300,7 @@ export default function DappCard({ dapp, theme = 'dark' }) {
             position: 'relative',
             flexShrink: 0
           }}>
-            {logoUrl && !logoError ? (
+            {logoUrl && !logoError && !logoLoading ? (
               <img 
                 src={logoUrl} 
                 alt={dapp.title} 
@@ -196,21 +312,49 @@ export default function DappCard({ dapp, theme = 'dark' }) {
                   backgroundColor: 'rgba(15, 23, 42, 0.8)',
                   padding: 12,
                   border: `2px solid ${accent.primary}40`,
-                  boxShadow: `0 4px 16px rgba(0, 0, 0, 0.3), 0 0 20px ${accent.primary}20`
+                  boxShadow: `0 4px 16px rgba(0, 0, 0, 0.3), 0 0 20px ${accent.primary}20`,
+                  display: 'block'
                 }}
                 onError={(e) => {
-                  // Try next logo URL in the fallback chain
+                  // Additional error handling (in case preload missed it)
                   const currentIndex = logoUrls.indexOf(logoUrl);
                   if (currentIndex < logoUrls.length - 1) {
-                    // Try next URL
                     setLogoUrl(logoUrls[currentIndex + 1]);
                   } else {
-                    // All logos failed, show fallback
                     setLogoError(true);
+                    setLogoLoading(false);
                   }
                 }}
+                loading="lazy"
+                crossOrigin="anonymous"
               />
+            ) : logoLoading ? (
+              // Loading placeholder
+              <div 
+                style={{ 
+                  width: 80, 
+                  height: 80, 
+                  borderRadius: 12,
+                  background: `linear-gradient(135deg, ${accent.primary}20 0%, ${accent.secondary}20 100%)`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  border: `2px solid ${accent.primary}40`,
+                  boxShadow: `0 4px 16px rgba(0, 0, 0, 0.3), 0 0 20px ${accent.primary}20`,
+                  animation: 'pulse 2s ease-in-out infinite'
+                }}
+              >
+                <div style={{
+                  width: 24,
+                  height: 24,
+                  border: `3px solid ${accent.primary}40`,
+                  borderTopColor: accent.primary,
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }} />
+              </div>
             ) : (
+              // Fallback when all logos fail
               <div 
                 style={{ 
                   width: 80, 
@@ -223,8 +367,9 @@ export default function DappCard({ dapp, theme = 'dark' }) {
                   color: '#0a0e27',
                   fontSize: 32,
                   fontWeight: 900,
-                  fontFamily: '"Orbitron", monospace',
-                  boxShadow: `0 4px 16px rgba(0, 0, 0, 0.3), 0 0 20px ${accent.primary}40`
+                  fontFamily: '"Aspekta", sans-serif',
+                  boxShadow: `0 4px 16px rgba(0, 0, 0, 0.3), 0 0 20px ${accent.primary}40`,
+                  border: `2px solid ${accent.primary}40`
                 }}
               >
                 {dapp.title?.charAt(0)?.toUpperCase() || '?'}
@@ -239,7 +384,7 @@ export default function DappCard({ dapp, theme = 'dark' }) {
               fontSize: 20, 
               marginBottom: 8,
               color: accent.primary,
-              fontFamily: '"Orbitron", monospace',
+              fontFamily: '"Aspekta", sans-serif',
               textTransform: 'uppercase',
               letterSpacing: '1px',
               overflow: 'hidden',
@@ -259,11 +404,11 @@ export default function DappCard({ dapp, theme = 'dark' }) {
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden'
             }}>
-              {dapp.short_description || dapp.description || 'No description available'}
+              {description}
             </div>
 
             {/* Category badge */}
-            {dapp.categoryDefillama && (
+            {category && (
               <div style={{ marginBottom: 12 }}>
                 <span style={{
                   display: 'inline-block',
@@ -276,9 +421,9 @@ export default function DappCard({ dapp, theme = 'dark' }) {
                   backgroundColor: `${accent.primary}20`,
                   color: accent.primary,
                   border: `1px solid ${accent.primary}40`,
-                  fontFamily: '"JetBrains Mono", monospace'
+                  fontFamily: '"Aspekta", sans-serif'
                 }}>
-                  {dapp.categoryDefillama}
+                  {category}
                 </span>
               </div>
             )}
@@ -291,7 +436,7 @@ export default function DappCard({ dapp, theme = 'dark' }) {
                     fontSize: 18, 
                     fontWeight: 700, 
                     color: accent.primary,
-                    fontFamily: '"Orbitron", monospace'
+                    fontFamily: '"Aspekta", sans-serif'
                   }}>
                     {fmtMoney(tvl)}
                   </div>
@@ -312,7 +457,7 @@ export default function DappCard({ dapp, theme = 'dark' }) {
                     fontSize: 18, 
                     fontWeight: 700, 
                     color: accent.secondary,
-                    fontFamily: '"Orbitron", monospace'
+                    fontFamily: '"Aspekta", sans-serif'
                   }}>
                     {fmtMoney(price)}
                   </div>
@@ -336,7 +481,7 @@ export default function DappCard({ dapp, theme = 'dark' }) {
                   color: '#64748b',
                   textTransform: 'uppercase',
                   letterSpacing: '0.5px',
-                  fontFamily: '"JetBrains Mono", monospace'
+                  fontFamily: '"Aspekta", sans-serif'
                 }}>
                   {dapp.last_synced_at ? 'SYNCED' : 'NOT SYNCED'}
                 </span>
