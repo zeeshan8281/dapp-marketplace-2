@@ -8,7 +8,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 
 const QUERY = `
   query ListDapps($first: IntType, $skip: IntType) {
-    allDapps(first: $first, skip: $skip, orderBy: _createdAt_DESC) {
+    allDapps(first: $first, skip: $skip, orderBy: _updatedAt_DESC) {
       id
       title
       # slug  # Uncomment once GraphQL schema refreshes (usually 2-3 minutes)
@@ -945,10 +945,33 @@ export async function getServerSideProps() {
       finalDapps.push(dapp);
     }
     
+    // Prioritize chain dapps at the top
+    const chainDappNames = ['StarkNet', 'Cronos', 'Polygon zkEVM', 'Ethereum', 'Solana', 'OP Mainnet', 'Arbitrum'];
+    const chainDapps = [];
+    const regularDapps = [];
+    
+    finalDapps.forEach(dapp => {
+      if (chainDappNames.includes(dapp.title)) {
+        chainDapps.push(dapp);
+      } else {
+        regularDapps.push(dapp);
+      }
+    });
+    
+    // Sort chain dapps by the order in chainDappNames
+    chainDapps.sort((a, b) => {
+      const indexA = chainDappNames.indexOf(a.title);
+      const indexB = chainDappNames.indexOf(b.title);
+      return indexA - indexB;
+    });
+    
+    // Combine: chains first, then regular dapps
+    const prioritizedDapps = [...chainDapps, ...regularDapps];
+    
     return {
       props: {
-        dapps: finalDapps,
-        totalCount: firstPage._allDappsMeta?.count || finalDapps.length,
+        dapps: prioritizedDapps,
+        totalCount: firstPage._allDappsMeta?.count || prioritizedDapps.length,
         categories: [], // Categories extracted from alchemyRecentActivity
         chains: [], // Chains will be available once GraphQL schema refreshes
         tags: [] // Tags not available in current schema
