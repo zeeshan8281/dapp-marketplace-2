@@ -950,11 +950,14 @@ export async function getServerSideProps() {
     // 2. Dapps with TVL (tvlUsd > 0), sorted by TVL desc
     // 3. Remaining dapps
     
-    // Only foundational and frontier chains (no community/archived)
+    // Only foundational chains (frontier chains commented out)
     const chainDappNames = [
-      'StarkNet', 'Polygon zkEVM', 'Ethereum', 'Solana', 'OP Mainnet', 'Arbitrum', // Original priority chains first
-      'Base', 'HyperCore', 'Sei', 'Plasma', 'Monad', 'Sonic', 'Berachain', 'HyperEVM', 'Viction',
-      'Taiko', 'Avalanche C-Chain', 'Mantle', 'Linea', 'Arbitrum Nova', 'Oasis Sapphire', 'zkSync Era',
+      'StarkNet', 'Polygon zkEVM', 'Ethereum', 'OP Mainnet', // Foundational chains
+      'Base', // Foundational
+      // Frontier chains commented out:
+      // 'Solana', 'Arbitrum', 'HyperCore', 'Sei', 'Plasma', 'Monad', 'Sonic', 'Berachain', 'HyperEVM', 'Viction',
+      // 'Taiko', 'Avalanche C-Chain', 'Mantle', 'Linea', 'Arbitrum Nova',
+      'Oasis Sapphire', 'zkSync Era',
       'World Chain', 'Axie/Ronin', 'ApeChain', 'Scroll', 'Unichain', 'Ink', 'Lens', 'Optimism',
       'Polygon', 'Gnosis', 'BNB Smart Chain (BSC)', 'Bitcoin'
     ];
