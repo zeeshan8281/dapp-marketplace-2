@@ -950,15 +950,16 @@ export async function getServerSideProps() {
     // 2. Dapps with TVL (tvlUsd > 0), sorted by TVL desc
     // 3. Remaining dapps
     
-    // Only foundational chains (frontier chains commented out)
+    // Only foundational chains + Solana (all other frontier chains removed)
     const chainDappNames = [
-      'StarkNet', 'Polygon zkEVM', 'Ethereum', 'OP Mainnet', // Foundational chains
+      'StarkNet', 'Ethereum', // Foundational chains (Polygon zkEVM removed, OP Mainnet merged into Optimism)
       'Base', // Foundational
-      // Frontier chains commented out:
-      // 'Solana', 'Arbitrum', 'HyperCore', 'Sei', 'Plasma', 'Monad', 'Sonic', 'Berachain', 'HyperEVM', 'Viction',
+      'Solana', // Only Solana from frontier chains
+      // All other frontier chains removed:
+      // 'Arbitrum', 'HyperCore', 'Sei', 'Plasma', 'Monad', 'Sonic', 'Berachain', 'HyperEVM', 'Viction',
       // 'Taiko', 'Avalanche C-Chain', 'Mantle', 'Linea', 'Arbitrum Nova',
-      'Oasis Sapphire', 'zkSync Era',
-      'World Chain', 'Axie/Ronin', 'ApeChain', 'Scroll', 'Unichain', 'Ink', 'Lens', 'Optimism',
+      // 'Oasis Sapphire', 'zkSync Era', 'World Chain', 'Axie/Ronin', 'ApeChain', 'Scroll', 'Unichain', 'Ink', 'Lens',
+      'Optimism', // OP Mainnet merged into Optimism
       'Polygon', 'Gnosis', 'BNB Smart Chain (BSC)', 'Bitcoin'
     ];
     const chainDapps = [];

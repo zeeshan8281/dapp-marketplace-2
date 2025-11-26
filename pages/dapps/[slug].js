@@ -21,6 +21,7 @@ const QUERY = `
       categoryDefillama
       defillamaUrl
       alchemyRecentActivity
+      # unifiedMetadata  # Field doesn't exist in schema yet
       goldrushSection
       # Note: chains, categories, and tags are stored in alchemyRecentActivity JSON, not as relationships
     }
@@ -644,8 +645,7 @@ export default function DappDetail({ dapp, error }) {
               {'<'} EXIT
             </a>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-              {hasDefiLlama && <DataSourceBadge source="defillama" />}
-              {hasAlchemy && <DataSourceBadge source="alchemy" />}
+              {/* Data source badges removed */}
             </div>
           </div>
         </header>
@@ -709,11 +709,11 @@ export default function DappDetail({ dapp, error }) {
                 src={logoUrl} 
                 alt={dapp.title}
                 style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
+                    width: dapp.title === 'Base' ? '60%' : '100%',
+                    height: dapp.title === 'Base' ? '60%' : '100%',
+                    objectFit: dapp.title === 'Base' ? 'contain' : 'cover',
                     borderRadius: '50%',
-                  display: 'block'
+                  display: 'block',
                 }}
                 onError={(e) => {
                     // Hide broken image and show fallback initial
@@ -856,171 +856,7 @@ export default function DappDetail({ dapp, error }) {
                 )}
                     </div>
 
-              {/* Enhanced Metrics Grid (only show when there are non-chain metrics to display) */}
-              {(tvl || tokenPrice || marketCap || tokenSymbol || unified?.dataQuality?.completenessScore) && (
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
-                gap: 24,
-                padding: 24,
-                background: theme === 'dark' ? 'rgba(15, 23, 42, 0.4)' : 'rgba(255, 255, 255, 0.5)',
-                borderRadius: 12,
-                border: `1px solid ${colors.border}`
-              }}>
-                {tvl && tvl > 0 && (
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ 
-                      fontSize: 28, 
-                      fontWeight: 800, 
-                      color: accent.primary, 
-                      fontFamily: '"Aspekta", sans-serif',
-                      marginBottom: 4,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 8,
-                      flexWrap: 'wrap'
-                    }}>
-                      <span>${tvl >= 1000000000 ? (tvl / 1000000000).toFixed(2) + 'B' : (tvl / 1000000).toFixed(2) + 'M'}</span>
-                      {/* TVL Trend Indicator */}
-                      {tvlChange1d !== null && tvlChange1d !== undefined && (
-                        <span style={{
-                          fontSize: 14,
-                          color: tvlChange1d >= 0 ? accent.secondary : '#ef4444',
-                          fontWeight: 700,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4
-                        }}>
-                          {tvlChange1d >= 0 ? '↑' : '↓'} {Math.abs(tvlChange1d).toFixed(1)}%
-                        </span>
-                      )}
-                  </div>
-                    <div style={{ 
-                      fontSize: 11, 
-                      color: colors.textTertiary, 
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                      fontWeight: 600
-                    }}>
-                      Total Value Locked
-                    </div>
-                    {/* TVL Trend Details */}
-                    {(tvlChange7d !== null || tvlChange1m !== null) && (
-                      <div style={{
-                        marginTop: 8,
-                        display: 'flex',
-                        gap: 12,
-                        justifyContent: 'center',
-                        fontSize: 10,
-                        color: colors.textTertiary,
-                        flexWrap: 'wrap'
-                      }}>
-                        {tvlChange7d !== null && tvlChange7d !== undefined && (
-                          <span style={{ 
-                            color: tvlChange7d >= 0 ? accent.secondary : '#ef4444',
-                            fontWeight: 600
-                          }}>
-                            7d: {tvlChange7d >= 0 ? '+' : ''}{tvlChange7d.toFixed(1)}%
-                          </span>
-                        )}
-                        {tvlChange1m !== null && tvlChange1m !== undefined && (
-                          <span style={{ 
-                            color: tvlChange1m >= 0 ? accent.secondary : '#ef4444',
-                            fontWeight: 600
-                          }}>
-                            30d: {tvlChange1m >= 0 ? '+' : ''}{tvlChange1m.toFixed(1)}%
-                          </span>
-                        )}
-                    </div>
-                    )}
-                  </div>
-                )}
-                {/* Token Metrics Card */}
-                {(tokenPrice || marketCap || tokenSymbol) && (
-                  <div style={{ 
-                    textAlign: 'center',
-                    gridColumn: tokenPrice && marketCap ? 'span 2' : 'span 1'
-                  }}>
-                    {tokenSymbol && (
-                      <div style={{
-                        fontSize: 12,
-                        fontWeight: 700,
-                        color: accent.secondary,
-                        marginBottom: 8,
-                        textTransform: 'uppercase',
-                        letterSpacing: '1px'
-                      }}>
-                        {tokenSymbol} Token
-                      </div>
-                    )}
-                    {tokenPrice && tokenPrice > 0 && (
-                      <div style={{ 
-                        fontSize: 28, 
-                        fontWeight: 800, 
-                        color: accent.secondary, 
-                        fontFamily: '"Aspekta", sans-serif',
-                        marginBottom: 4
-                      }}>
-                        ${tokenPrice.toFixed(4)}
-                      </div>
-                    )}
-                    {marketCap && marketCap > 0 && (
-                      <div style={{ 
-                        fontSize: 20, 
-                        fontWeight: 700, 
-                        color: colors.textSecondary, 
-                        fontFamily: '"Aspekta", sans-serif',
-                        marginBottom: 4
-                      }}>
-                        ${marketCap >= 1000000000 ? (marketCap / 1000000000).toFixed(2) + 'B' : (marketCap / 1000000).toFixed(2) + 'M'}
-                      </div>
-                    )}
-                    <div style={{ 
-                      fontSize: 11, 
-                      color: colors.textTertiary, 
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                      fontWeight: 600
-                    }}>
-                      {tokenPrice ? 'Token Price' : marketCap ? 'Market Cap' : 'Token Info'}
-                    </div>
-                    {fdv && fdv > 0 && (
-                      <div style={{
-                        marginTop: 4,
-                        fontSize: 10,
-                        color: colors.textTertiary
-                      }}>
-                        FDV: ${fdv >= 1000000000 ? (fdv / 1000000000).toFixed(2) + 'B' : (fdv / 1000000).toFixed(2) + 'M'}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {/* Removed large blockchain count metrics card to avoid redundant "1 Blockchain" box */}
-                {unified?.dataQuality?.completenessScore && (
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ 
-                      fontSize: 28, 
-                      fontWeight: 800, 
-                      color: unified.dataQuality.completenessScore >= 80 ? accent.secondary : accent.primary, 
-                      fontFamily: '"Aspekta", sans-serif',
-                      marginBottom: 4
-                    }}>
-                      {unified.dataQuality.completenessScore}%
-                    </div>
-                    <div style={{ 
-                      fontSize: 11, 
-                      color: colors.textTertiary, 
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                      fontWeight: 600
-                    }}>
-                      Data Quality
-                    </div>
-                  </div>
-                )}
-              </div>
-              )}
+              {/* Metrics Grid removed - TVL moved to Details section */}
               </div>
             </div>
           </section>
@@ -1071,8 +907,9 @@ export default function DappDetail({ dapp, error }) {
               )}
             </div>
 
-            {/* Key Features / Highlights */}
-            {(chains?.length > 0 || categories?.length > 0 || unified?.featured || unified?.verified) && (
+            {/* Key Features / Highlights - Hidden for Layer 1, Layer 2 Blockchains, and Foundational Chain */}
+            {category !== 'Layer 1 Blockchains' && category !== 'Layer 2 Blockchains' && category !== 'Foundational Chain' && 
+             (chains?.length > 0 || categories?.length > 0 || unified?.featured || unified?.verified) && (
               <div style={{
                 marginTop: 32,
                 padding: 24,
@@ -1154,40 +991,11 @@ export default function DappDetail({ dapp, error }) {
               </div>
             )}
 
-            {/* Show data source */}
-            <div style={{
-              marginTop: 24,
-              paddingTop: 24,
-              borderTop: `1px solid ${accent.primary}20`,
-              fontSize: 12,
-              color: colors.textTertiary,
-              fontFamily: '"Aspekta", sans-serif',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              flexWrap: 'wrap'
-            }}>
-              <span>📊</span>
-              <span>
-                {alchemyData?.longDescription && 'Extended description available'}
-                {!alchemyData?.longDescription && hasDefiLlama && 'Description from DeFiLlama'}
-                {!alchemyData?.longDescription && !hasDefiLlama && hasAlchemy && 'Description from Alchemy'}
-              </span>
-              {unified?.sources && (
-                <>
-                  <span style={{ opacity: 0.5 }}>•</span>
-                  <span>
-                    Data from: {unified.sources.name === 'both' ? 'Alchemy + DeFiLlama' : 
-                                unified.sources.name === 'alchemy' ? 'Alchemy' : 
-                                unified.sources.name === 'defillama' ? 'DeFiLlama' : 'Multiple sources'}
-                  </span>
-                </>
-              )}
-            </div>
+            {/* Data source info removed */}
           </section>
 
           {/* Links & Resources Section */}
-          {(websiteUrl || twitterUrl || githubUrl || discordUrl || documentationUrl || defillamaUrl || alchemyUrl) && (
+          {(websiteUrl || twitterUrl || githubUrl || discordUrl || documentationUrl) && (
             <section style={{
               marginBottom: 48,
               padding: 40,
@@ -1401,87 +1209,14 @@ export default function DappDetail({ dapp, error }) {
                     <span style={{ fontSize: 12, opacity: 0.7 }}>→</span>
                   </a>
                 )}
-                {defillamaUrl && (
-                  <a 
-                    href={defillamaUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{
-                      padding: '16px 20px',
-                      background: 'rgba(139, 92, 246, 0.15)',
-                      color: '#a78bfa',
-                      borderRadius: 12,
-                      textDecoration: 'none',
-                      fontFamily: '"Aspekta", sans-serif',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      border: '1px solid rgba(139, 92, 246, 0.3)',
-                      transition: 'all 0.3s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      boxShadow: '0 2px 8px rgba(139, 92, 246, 0.1)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(139, 92, 246, 0.25)';
-                      e.currentTarget.style.boxShadow = '0 4px 16px rgba(139, 92, 246, 0.3)';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(139, 92, 246, 0.15)';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(139, 92, 246, 0.1)';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    <span style={{ fontSize: 20 }}>📊</span>
-                    <span style={{ flex: 1 }}>DeFiLlama</span>
-                    <span style={{ fontSize: 12, opacity: 0.7 }}>→</span>
-                  </a>
-                )}
-                {alchemyUrl && (
-                  <a 
-                    href={alchemyUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    style={{
-                      padding: '16px 20px',
-                      background: 'rgba(59, 130, 246, 0.15)',
-                      color: '#60a5fa',
-                      borderRadius: 12,
-                      textDecoration: 'none',
-                      fontFamily: '"Aspekta", sans-serif',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      border: '1px solid rgba(59, 130, 246, 0.3)',
-                      transition: 'all 0.3s',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      boxShadow: '0 2px 8px rgba(59, 130, 246, 0.1)'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.background = 'rgba(59, 130, 246, 0.25)';
-                      e.currentTarget.style.boxShadow = '0 4px 16px rgba(59, 130, 246, 0.3)';
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(59, 130, 246, 0.15)';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(59, 130, 246, 0.1)';
-                      e.currentTarget.style.transform = 'translateY(0)';
-                    }}
-                  >
-                    <span style={{ fontSize: 20 }}>⚡</span>
-                    <span style={{ flex: 1 }}>Alchemy</span>
-                    <span style={{ fontSize: 12, opacity: 0.7 }}>→</span>
-                  </a>
-                )}
               </div>
             </section>
           )}
 
-          {/* Details Section - Only show if there's content (chains, categories, or chain TVL) */}
+          {/* Details Section - Only show if there's content (chains, categories, TVL, or chain TVL) */}
           {((chains && chains.length > 0) || 
             (categories && categories.length > 0) || 
+            (tvl && tvl > 0) ||
             (unified?.chainTvl && Object.keys(unified.chainTvl).length > 0)) && (
           <section style={{
             padding: 40,
@@ -1506,6 +1241,85 @@ export default function DappDetail({ dapp, error }) {
                 📋 DETAILS
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 24 }}>
+              {/* TVL Section */}
+              {tvl && tvl > 0 && (
+                <div>
+                  <div style={{ 
+                    fontSize: 12,
+                    color: colors.textTertiary, 
+                    marginBottom: 12, 
+                    textTransform: 'uppercase', 
+                    fontFamily: '"Aspekta", sans-serif',
+                    fontWeight: 700,
+                    letterSpacing: '0.5px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8
+                  }}>
+                    💰 TOTAL VALUE LOCKED
+                  </div>
+                  <div style={{
+                    padding: '16px 20px',
+                    borderRadius: 10,
+                    background: theme === 'dark' ? 'rgba(15, 23, 42, 0.6)' : 'rgba(248, 250, 252, 0.8)',
+                    border: `1px solid ${accent.primary}30`,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8
+                  }}>
+                    <div style={{ 
+                      fontSize: 24, 
+                      fontWeight: 800, 
+                      color: accent.primary, 
+                      fontFamily: '"Aspekta", sans-serif',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      flexWrap: 'wrap'
+                    }}>
+                      <span>${tvl >= 1000000000 ? (tvl / 1000000000).toFixed(2) + 'B' : (tvl / 1000000).toFixed(2) + 'M'}</span>
+                      {tvlChange1d !== null && tvlChange1d !== undefined && (
+                        <span style={{
+                          fontSize: 12,
+                          color: tvlChange1d >= 0 ? accent.secondary : '#ef4444',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4
+                        }}>
+                          {tvlChange1d >= 0 ? '↑' : '↓'} {Math.abs(tvlChange1d).toFixed(1)}%
+                        </span>
+                      )}
+                    </div>
+                    {(tvlChange7d !== null || tvlChange1m !== null) && (
+                      <div style={{
+                        display: 'flex',
+                        gap: 12,
+                        fontSize: 10,
+                        color: colors.textTertiary,
+                        flexWrap: 'wrap'
+                      }}>
+                        {tvlChange7d !== null && tvlChange7d !== undefined && (
+                          <span style={{ 
+                            color: tvlChange7d >= 0 ? accent.secondary : '#ef4444',
+                            fontWeight: 600
+                          }}>
+                            7d: {tvlChange7d >= 0 ? '+' : ''}{tvlChange7d.toFixed(1)}%
+                          </span>
+                        )}
+                        {tvlChange1m !== null && tvlChange1m !== undefined && (
+                          <span style={{ 
+                            color: tvlChange1m >= 0 ? accent.secondary : '#ef4444',
+                            fontWeight: 600
+                          }}>
+                            30d: {tvlChange1m >= 0 ? '+' : ''}{tvlChange1m.toFixed(1)}%
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
                 {chains && chains.length > 0 && (
                 <div>
                   <div style={{ 
@@ -1892,13 +1706,26 @@ export default function DappDetail({ dapp, error }) {
 // Helper to generate slug from title
 export async function getServerSideProps({ params }) {
   try {
-    const data = await datoFetch(QUERY, { id: params.slug });
+    // params.slug is actually the dapp ID from the URL
+    const dappId = params.slug;
     
-    if (!data.dapp) {
+    if (!dappId) {
       return {
         props: {
           dapp: null,
-          error: `DApp not found: ${params.slug}`
+          error: 'No dapp ID provided'
+        }
+      };
+    }
+    
+    const data = await datoFetch(QUERY, { id: dappId });
+    
+    if (!data || !data.dapp) {
+      console.error(`DApp not found for ID: ${dappId}`);
+      return {
+        props: {
+          dapp: null,
+          error: `DApp not found: ${dappId}`
         }
       };
     }
@@ -1909,7 +1736,8 @@ export async function getServerSideProps({ params }) {
       }
     };
   } catch (err) {
-    console.error('DatoCMS Error:', err);
+    console.error('DatoCMS Error in getServerSideProps:', err);
+    console.error('Params:', params);
     const errorMessage = process.env.NODE_ENV === 'development' 
       ? err.message 
       : 'Failed to load dapp';

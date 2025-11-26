@@ -218,6 +218,14 @@ export default function DappCard({ dapp, theme = 'dark' }) {
 
   const accent = getAccentColor(dapp.title);
 
+  // Check if this is a foundational chain
+  const foundationalChains = [
+    'Ethereum', 'Base', 'StarkNet', 'Optimism', 'Polygon', 
+    'Gnosis', 'BNB Smart Chain (BSC)', 'Bitcoin'
+  ];
+  const isFoundationalChain = foundationalChains.includes(dapp.title) || 
+                               category === 'Foundational Chain';
+
   return (
     <Link 
       href={`/dapps/${dapp.id}`}
@@ -303,9 +311,9 @@ export default function DappCard({ dapp, theme = 'dark' }) {
                 src={logoUrl} 
                 alt={dapp.title} 
                 style={{ 
-                  width: '100%', 
-                  height: '100%', 
-                  objectFit: "cover",
+                  width: dapp.title === 'Base' ? '60%' : (isFoundationalChain ? '100%' : '100%'), 
+                  height: dapp.title === 'Base' ? '60%' : (isFoundationalChain ? '100%' : '100%'), 
+                  objectFit: dapp.title === 'Base' ? "contain" : (isFoundationalChain ? "cover" : "cover"),
                   borderRadius: '50%',
                   display: 'block',
                 }}
