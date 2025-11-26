@@ -704,44 +704,44 @@ export default function DappDetail({ dapp, error }) {
                 boxShadow: `0 6px 20px ${accent.primary}25`
               }}
             >
-              {logoUrl ? (
-                <img 
-                  src={logoUrl} 
-                  alt={dapp.title}
-                  style={{
+            {logoUrl ? (
+              <img 
+                src={logoUrl} 
+                alt={dapp.title}
+                style={{
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
                     borderRadius: '50%',
-                    display: 'block'
-                  }}
-                  onError={(e) => {
+                  display: 'block'
+                }}
+                onError={(e) => {
                     // Hide broken image and show fallback initial
-                    e.currentTarget.style.display = 'none';
-                    const fallback = e.currentTarget.nextSibling;
-                    if (fallback) fallback.style.display = 'flex';
-                  }}
-                  loading="lazy"
-                  crossOrigin="anonymous"
-                />
-              ) : null}
+                  e.currentTarget.style.display = 'none';
+                  const fallback = e.currentTarget.nextSibling;
+                  if (fallback) fallback.style.display = 'flex';
+                }}
+                loading="lazy"
+                crossOrigin="anonymous"
+              />
+            ) : null}
               {/* Fallback logo (initial) */}
-              <div 
-                style={{ 
+            <div 
+              style={{ 
                   width: '100%',
                   height: '100%',
                   borderRadius: '50%',
-                  background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.secondary} 100%)`,
-                  display: logoUrl ? 'none' : 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: '#0a0e27',
-                  fontSize: 48,
-                  fontWeight: 900,
+                background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.secondary} 100%)`,
+                display: logoUrl ? 'none' : 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#0a0e27',
+                fontSize: 48,
+                fontWeight: 900,
                   fontFamily: '"Aspekta", sans-serif'
-                }}
-              >
-                {displayName?.charAt(0)?.toUpperCase() || '?'}
+              }}
+            >
+              {displayName?.charAt(0)?.toUpperCase() || '?'}
               </div>
             </div>
             <div style={{ flex: 1 }}>

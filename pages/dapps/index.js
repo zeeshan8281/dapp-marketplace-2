@@ -951,13 +951,12 @@ export async function getServerSideProps() {
     // 3. Remaining dapps
     
     // Only foundational and frontier chains (no community/archived)
-    // Commented out for now - chains won't be prioritized at top
     const chainDappNames = [
-      // 'StarkNet', 'Polygon zkEVM', 'Ethereum', 'Solana', 'OP Mainnet', 'Arbitrum', // Original priority chains first
-      // 'Base', 'HyperCore', 'Sei', 'Plasma', 'Monad', 'Sonic', 'Berachain', 'HyperEVM', 'Viction',
-      // 'Taiko', 'Avalanche C-Chain', 'Mantle', 'Linea', 'Arbitrum Nova', 'Oasis Sapphire', 'zkSync Era',
-      // 'World Chain', 'Axie/Ronin', 'ApeChain', 'Scroll', 'Unichain', 'Ink', 'Lens', 'Optimism',
-      // 'Polygon', 'Gnosis', 'BNB Smart Chain (BSC)', 'Bitcoin'
+      'StarkNet', 'Polygon zkEVM', 'Ethereum', 'Solana', 'OP Mainnet', 'Arbitrum', // Original priority chains first
+      'Base', 'HyperCore', 'Sei', 'Plasma', 'Monad', 'Sonic', 'Berachain', 'HyperEVM', 'Viction',
+      'Taiko', 'Avalanche C-Chain', 'Mantle', 'Linea', 'Arbitrum Nova', 'Oasis Sapphire', 'zkSync Era',
+      'World Chain', 'Axie/Ronin', 'ApeChain', 'Scroll', 'Unichain', 'Ink', 'Lens', 'Optimism',
+      'Polygon', 'Gnosis', 'BNB Smart Chain (BSC)', 'Bitcoin'
     ];
     const chainDapps = [];
     const nonChainDapps = [];
