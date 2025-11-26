@@ -945,16 +945,28 @@ export async function getServerSideProps() {
       finalDapps.push(dapp);
     }
     
-    // Prioritize chain dapps at the top
-    const chainDappNames = ['StarkNet', 'Cronos', 'Polygon zkEVM', 'Ethereum', 'Solana', 'OP Mainnet', 'Arbitrum'];
+    // Prioritize ordering:
+    // 1. Chain dapps (specific chain names) - all chains from goldrush-docs
+    // 2. Dapps with TVL (tvlUsd > 0), sorted by TVL desc
+    // 3. Remaining dapps
+    
+    // Only foundational and frontier chains (no community/archived)
+    // Commented out for now - chains won't be prioritized at top
+    const chainDappNames = [
+      // 'StarkNet', 'Polygon zkEVM', 'Ethereum', 'Solana', 'OP Mainnet', 'Arbitrum', // Original priority chains first
+      // 'Base', 'HyperCore', 'Sei', 'Plasma', 'Monad', 'Sonic', 'Berachain', 'HyperEVM', 'Viction',
+      // 'Taiko', 'Avalanche C-Chain', 'Mantle', 'Linea', 'Arbitrum Nova', 'Oasis Sapphire', 'zkSync Era',
+      // 'World Chain', 'Axie/Ronin', 'ApeChain', 'Scroll', 'Unichain', 'Ink', 'Lens', 'Optimism',
+      // 'Polygon', 'Gnosis', 'BNB Smart Chain (BSC)', 'Bitcoin'
+    ];
     const chainDapps = [];
-    const regularDapps = [];
+    const nonChainDapps = [];
     
     finalDapps.forEach(dapp => {
       if (chainDappNames.includes(dapp.title)) {
         chainDapps.push(dapp);
       } else {
-        regularDapps.push(dapp);
+        nonChainDapps.push(dapp);
       }
     });
     
@@ -965,8 +977,23 @@ export async function getServerSideProps() {
       return indexA - indexB;
     });
     
-    // Combine: chains first, then regular dapps
-    const prioritizedDapps = [...chainDapps, ...regularDapps];
+    // Split non-chain dapps into those with TVL and the rest
+    const tvlDapps = [];
+    const otherDapps = [];
+    nonChainDapps.forEach(dapp => {
+      const tvl = typeof dapp.tvlUsd === 'number' ? dapp.tvlUsd : null;
+      if (tvl && tvl > 0) {
+        tvlDapps.push(dapp);
+      } else {
+        otherDapps.push(dapp);
+      }
+    });
+    
+    // Sort TVL dapps by TVL descending (highest TVL first)
+    tvlDapps.sort((a, b) => (b.tvlUsd || 0) - (a.tvlUsd || 0));
+    
+    // Combine: chains first, then TVL dapps, then everything else
+    const prioritizedDapps = [...chainDapps, ...tvlDapps, ...otherDapps];
     
     return {
       props: {

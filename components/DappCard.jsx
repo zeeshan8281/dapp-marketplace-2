@@ -202,18 +202,6 @@ export default function DappCard({ dapp, theme = 'dark' }) {
     };
   }, [logoUrl, logoUrls]);
 
-  // Calculate freshness indicator
-  const getFreshnessColor = (lastSynced) => {
-    if (!lastSynced) return '#64748b';
-    const minutesAgo = (Date.now() - new Date(lastSynced).getTime()) / (1000 * 60);
-    if (minutesAgo < 30) return '#00ff88';
-    if (minutesAgo < 360) return '#ff6b35';
-    return '#ef4444';
-  };
-
-  const freshnessColor = getFreshnessColor(dapp.last_synced_at);
-  const hasData = tvl != null || price != null;
-
   // Generate neon accent color based on title
   const getAccentColor = (title) => {
     const colors = [
@@ -298,22 +286,28 @@ export default function DappCard({ dapp, theme = 'dark' }) {
           {/* Logo */}
           <div style={{
             position: 'relative',
-            flexShrink: 0
+            flexShrink: 0,
+            width: 80,
+            height: 80,
+            borderRadius: '50%',
+            backgroundColor: 'transparent',
+            padding: 0,
+            border: `2px solid ${accent.primary}40`,
+            boxShadow: `0 4px 16px rgba(0, 0, 0, 0.3), 0 0 20px ${accent.primary}20`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}>
             {logoUrl && !logoError && !logoLoading ? (
               <img 
                 src={logoUrl} 
                 alt={dapp.title} 
                 style={{ 
-                  width: 80, 
-                  height: 80, 
-                  objectFit: "contain",
-                  borderRadius: 12,
-                  backgroundColor: 'rgba(15, 23, 42, 0.8)',
-                  padding: 12,
-                  border: `2px solid ${accent.primary}40`,
-                  boxShadow: `0 4px 16px rgba(0, 0, 0, 0.3), 0 0 20px ${accent.primary}20`,
-                  display: 'block'
+                  width: '100%', 
+                  height: '100%', 
+                  objectFit: "cover",
+                  borderRadius: '50%',
+                  display: 'block',
                 }}
                 onError={(e) => {
                   // Additional error handling (in case preload missed it)
@@ -332,15 +326,13 @@ export default function DappCard({ dapp, theme = 'dark' }) {
               // Loading placeholder
               <div 
                 style={{ 
-                  width: 80, 
-                  height: 80, 
-                  borderRadius: 12,
+                  width: '100%', 
+                  height: '100%', 
+                  borderRadius: '50%',
                   background: `linear-gradient(135deg, ${accent.primary}20 0%, ${accent.secondary}20 100%)`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  border: `2px solid ${accent.primary}40`,
-                  boxShadow: `0 4px 16px rgba(0, 0, 0, 0.3), 0 0 20px ${accent.primary}20`,
                   animation: 'pulse 2s ease-in-out infinite'
                 }}
               >
@@ -357,9 +349,9 @@ export default function DappCard({ dapp, theme = 'dark' }) {
               // Fallback when all logos fail
               <div 
                 style={{ 
-                  width: 80, 
-                  height: 80, 
-                  borderRadius: 12,
+                  width: '100%', 
+                  height: '100%', 
+                  borderRadius: '50%',
                   background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.secondary} 100%)`,
                   display: 'flex',
                   alignItems: 'center',
@@ -368,8 +360,6 @@ export default function DappCard({ dapp, theme = 'dark' }) {
                   fontSize: 32,
                   fontWeight: 900,
                   fontFamily: '"Aspekta", sans-serif',
-                  boxShadow: `0 4px 16px rgba(0, 0, 0, 0.3), 0 0 20px ${accent.primary}40`,
-                  border: `2px solid ${accent.primary}40`
                 }}
               >
                 {dapp.title?.charAt(0)?.toUpperCase() || '?'}
@@ -467,25 +457,6 @@ export default function DappCard({ dapp, theme = 'dark' }) {
                 </div>
               )}
 
-              {/* Sync status */}
-              <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  backgroundColor: freshnessColor,
-                  boxShadow: `0 0 8px ${freshnessColor}80`
-                }} />
-                <span style={{ 
-                  fontSize: 11, 
-                  color: '#64748b',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px',
-                  fontFamily: '"Aspekta", sans-serif'
-                }}>
-                  {dapp.last_synced_at ? 'SYNCED' : 'NOT SYNCED'}
-                </span>
-              </div>
             </div>
           </div>
         </div>

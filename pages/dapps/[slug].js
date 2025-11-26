@@ -690,48 +690,59 @@ export default function DappDetail({ dapp, error }) {
               pointerEvents: 'none'
             }} />
             <div style={{ position: 'relative', zIndex: 1, display: 'flex', gap: 32, alignItems: 'flex-start' }}>
-            {logoUrl ? (
-              <img 
-                src={logoUrl} 
-                alt={dapp.title}
-                style={{
-                  width: 120,
-                  height: 120,
-                  objectFit: 'contain',
-                  borderRadius: 16,
-                  backgroundColor: theme === 'dark' ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.9)',
-                  padding: 16,
-                  border: `2px solid ${accent.primary}40`,
-                  display: 'block'
-                }}
-                onError={(e) => {
-                  // Hide broken image and show fallback
-                  e.currentTarget.style.display = 'none';
-                  const fallback = e.currentTarget.nextSibling;
-                  if (fallback) fallback.style.display = 'flex';
-                }}
-                loading="lazy"
-                crossOrigin="anonymous"
-              />
-            ) : null}
-            {/* Fallback logo */}
             <div 
               style={{ 
                 width: 120,
                 height: 120,
-                borderRadius: 16,
-                background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.secondary} 100%)`,
-                display: logoUrl ? 'none' : 'flex',
+                borderRadius: '50%',
+                backgroundColor: 'transparent',
+                padding: 0,
+                border: `2px solid ${accent.primary}40`,
+                display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#0a0e27',
-                fontSize: 48,
-                fontWeight: 900,
-                fontFamily: '"Aspekta", sans-serif',
-                border: `2px solid ${accent.primary}40`
+                boxShadow: `0 6px 20px ${accent.primary}25`
               }}
             >
-              {displayName?.charAt(0)?.toUpperCase() || '?'}
+              {logoUrl ? (
+                <img 
+                  src={logoUrl} 
+                  alt={dapp.title}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    borderRadius: '50%',
+                    display: 'block'
+                  }}
+                  onError={(e) => {
+                    // Hide broken image and show fallback initial
+                    e.currentTarget.style.display = 'none';
+                    const fallback = e.currentTarget.nextSibling;
+                    if (fallback) fallback.style.display = 'flex';
+                  }}
+                  loading="lazy"
+                  crossOrigin="anonymous"
+                />
+              ) : null}
+              {/* Fallback logo (initial) */}
+              <div 
+                style={{ 
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '50%',
+                  background: `linear-gradient(135deg, ${accent.primary} 0%, ${accent.secondary} 100%)`,
+                  display: logoUrl ? 'none' : 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#0a0e27',
+                  fontSize: 48,
+                  fontWeight: 900,
+                  fontFamily: '"Aspekta", sans-serif'
+                }}
+              >
+                {displayName?.charAt(0)?.toUpperCase() || '?'}
+              </div>
             </div>
             <div style={{ flex: 1 }}>
               <h1 style={{
@@ -845,8 +856,8 @@ export default function DappDetail({ dapp, error }) {
                 )}
                     </div>
 
-              {/* Enhanced Metrics Grid */}
-              {(tvl || tokenPrice || marketCap || tokenSymbol || chains?.length || unified?.dataQuality?.completenessScore) && (
+              {/* Enhanced Metrics Grid (only show when there are non-chain metrics to display) */}
+              {(tvl || tokenPrice || marketCap || tokenSymbol || unified?.dataQuality?.completenessScore) && (
               <div style={{ 
                 display: 'grid', 
                 gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', 
@@ -985,28 +996,7 @@ export default function DappDetail({ dapp, error }) {
                     )}
                   </div>
                 )}
-                {chains && chains.length > 0 && (
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ 
-                      fontSize: 28, 
-                      fontWeight: 800, 
-                      color: accent.primary, 
-                      fontFamily: '"Aspekta", sans-serif',
-                      marginBottom: 4
-                    }}>
-                      {chains.length}
-                    </div>
-                    <div style={{ 
-                      fontSize: 11, 
-                      color: colors.textTertiary, 
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                      fontWeight: 600
-                    }}>
-                      Blockchain{chains.length !== 1 ? 's' : ''}
-                    </div>
-                  </div>
-                )}
+                {/* Removed large blockchain count metrics card to avoid redundant "1 Blockchain" box */}
                 {unified?.dataQuality?.completenessScore && (
                   <div style={{ textAlign: 'center' }}>
                     <div style={{ 
